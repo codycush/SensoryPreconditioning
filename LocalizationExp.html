@@ -1,0 +1,591 @@
+<! doctype html>
+<html>
+  <head>
+  <style>
+  body{
+    background-color: rgb(255,255,255);
+  }
+  </style>
+  <title> Main Wrapper</title>
+  <script src = "jspsych-6.0.1/jspsych.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-LTH_alternate.js"></script> <!--Include the script for the plugin-->
+  <script src = "jspsych-6.0.1/plugins/jspsych-iso.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-fixation.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-call-function.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-mp-localization.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-instructions.js"></script>
+
+  <script src = "jspsych-6.0.1/pest.js"></script>
+  <link href = "jspsych-6.0.1/css/jspsych.css" rel = "stylesheet"></link>
+  </head>
+  <body>
+  </body>
+  <script>
+
+var dist; //global variable for participants' self-reported distance from monitor
+var cmPer200Px; //self-reported measured cm for 200 px black bar image
+var deg_per_px; //global for calculated px per degree
+      var vd_calib={
+        type: 'survey-text',
+        preamble:"<p>We need to calibrate the experiment to your computer monitor.  Please answer the following questions by inputting a number into each box.</P>"+
+        "<P>Press continue when finished (Note: Pressing continue will not advance the experiment until numbers are entered below):</p>"+
+            "<p><font color='red'>Please use a ruler or other measuring instrument if available.  Otherwise please make your best estimate (Note that 1 inch = ~2.5 cm). </font></p>",
+        questions:[
+          {prompt: 'How many centimeters (cm) is your face from your computer monitor?', value: 'cm', rows:1, columns:3},
+          {prompt: "<p>How many centimeters (cm) does this black bar measure on your screen?</p>"+
+                    "<div style='float: center;'><img src='jspsych-6.0.1/stimuli/200px_blackbar.png'></img>", value: 'cm', rows:1,columns:3},
+
+        ],
+        on_finish: function(){
+          var str=jsPsych.data.get().select('responses').values[jsPsych.data.get().select('responses').values.length-1]
+          dist=parseFloat(str.slice(str.indexOf('Q0')+5,str.indexOf('Q1')-3))//pulls first response from response string
+          cmPer200Px=parseFloat(str.slice(str.indexOf('Q1')+5))//pulls second response from response string
+          deg_per_px = (Math.atan2(.5*cmPer200Px, dist) / (.5*200))*180/Math.PI;
+          console.log(20/deg_per_px)
+
+        },
+
+
+      }
+      var vd_calib_ifApertureTooBig={
+        type: 'survey-text',
+        preamble:"<p><font color=red>The experiment will not fit on your screen at your current viewing distance.</P>"+
+        "<p>Please move closer to your computer screen and reinput your viewing distance. A reasonable viewing distance is around 60cm. </font>"+
+        "<P>Press continue when finished (Note: Pressing continue will not advance the experiment until numbers are entered below):</p>"+
+            "<p><font color='red'>Please use a ruler or other measuring instrument if available.  Otherwise please make your best estimate (Note that 1 inch = ~2.5 cm). </font></p>",
+        questions:[
+          {prompt: 'How many centimeters (cm) is your face from your computer monitor?', value: 'cm', rows:1, columns:3},
+          {prompt: "<p>How many centimeters (cm) does this black bar measure on your screen?</p>"+
+                    "<div style='float: center;'><img src='jspsych-6.0.1/stimuli/200px_blackbar.png'></img>", value: 'cm', rows:1,columns:3},
+
+        ],
+        on_finish: function(){
+          var str=jsPsych.data.get().select('responses').values[jsPsych.data.get().select('responses').values.length-1]
+          dist=parseFloat(str.slice(str.indexOf('Q0')+5,str.indexOf('Q1')-3))//pulls first response from response string
+          cmPer200Px=parseFloat(str.slice(str.indexOf('Q1')+5))//pulls second response from response string
+          deg_per_px = (Math.atan2(.5*cmPer200Px, dist) / (.5*200))*180/Math.PI;
+          console.log(deg_per_px)
+
+        },
+
+
+      }
+
+      var size_chill=false;
+      var calib_if_node={
+        timeline:[vd_calib_ifApertureTooBig],
+        conditional_function:function(){
+          var currAptHeight=Math.round(20/deg_per_px);
+          var currViewHole=window.outerHeight;
+          if (currAptHeight>currViewHole){
+            size_chill=false;
+            return true
+          }else{
+            size_chill=true;
+            return false
+          }
+        }
+      }
+      var calib_loop_if={
+      timeline:[calib_if_node],
+      loop_function:function(){
+        if(size_chill==false){
+          return true
+        }else{
+          return false
+
+        }
+        }
+      }
+      var calib_loop_timeline={
+        timeline:[vd_calib,calib_loop_if],
+        loop_function: function(){
+
+          if (isNaN(deg_per_px)){
+            return true
+          }else{
+            return false
+          }
+        },
+      }
+
+      var fixation_block={
+        type:'fixation',
+        fixation_cross_color:"red",
+        trial_duration:1000,
+        background_color: 'rgb(255,255,255)',
+      }
+      var consecutive_correct=0;
+      var consecutive_incorrect=0;
+      var bgval = 127;
+      var redValue;
+      var greenValue;
+      var trial_types=['1','2','3','4']
+
+      var mCorrect=false;
+      var pCorrect=false;
+      var mCorrect_1u2d=false;
+      var mCorrect_1u3d=false;
+      var pCorrect_1u2d=false;
+      var pCorrect_1u3d=false;
+      var m_consecutive_correct=0;
+      var m_consecutive_incorrect=0;
+      var p_consecutive_correct=0;
+      var p_consecutive_incorrect=0;
+
+      var noisePestParams_1u3d={
+        starting_intensity: .5,
+        down_threshold: 3,
+        up_threshold: 1,
+        upper_intensity_limit: 1,
+        lower_intensity_limit: 0.0000000001,
+        starting_step_size: 0.1,
+        min_step_size: 0.01,
+        max_step_size: 0.2,
+      }
+
+      var lthPestParams_1u3d={
+        starting_intensity: 7,
+        down_threshold: 3,
+        up_threshold: 1,
+        upper_intensity_limit: 127,
+        lower_intensity_limit: 0.0000001,
+        starting_step_size: 1,
+        min_step_size: 1,
+        max_step_size: 10,
+      }
+
+      var noisePestParams_1u2d={
+        starting_intensity: .5,
+        down_threshold: 2,
+        up_threshold: 1,
+        upper_intensity_limit: 1,
+        lower_intensity_limit: 0.0000000001,
+        starting_step_size: 0.1,
+        min_step_size: 0.01,
+        max_step_size: 0.2,
+      }
+
+      var lthPestParams_1u2d={
+        starting_intensity: 7,
+        down_threshold: 2,
+        up_threshold: 1,
+        upper_intensity_limit: 127,
+        lower_intensity_limit: 0.0000001,
+        starting_step_size: 1,
+        min_step_size: 1,
+        max_step_size: 10,
+      }
+
+
+
+
+      var pPest_1u3d=new pest(noisePestParams_1u3d)
+      var mPest_1u3d=new pest(lthPestParams_1u3d)
+      var pPest_1u2d=new pest(noisePestParams_1u2d)
+      var mPest_1u2d=new pest(lthPestParams_1u2d)
+
+      var lthVal2;
+      var lthVal3;
+      var noiseLevel2;
+      var noiseLevel3;
+
+      var currLth;
+
+
+
+
+
+      function repeat_array(reps,array){
+      var arr= []
+      for (var i=0; i < reps ;i++){
+        arr.push(array);
+      }
+      return arr
+    }
+
+
+
+
+
+
+
+/*old instructions
+      var iso_instructions_block = {
+        type: "html-keyboard-response",
+        stimulus: "<p>You will see a disc rapidly alternating between red and green.</p>"+
+        " <p>Adjust the red/green balance with the left and right arrows on your keyboard. </p>"+
+        " <p>When the disc appears to have the LEAST amount of flicker possible, press space to move on to the next trial.</p>"+
+        " <p>Please try to get the image to the point with the absolute least amount of flicker. Press any key to continue. </p>"
+      }*/
+      var iso_instructions_block = {
+        type: "instructions",
+        pages: ["<p>You will see a disc rapidly alternating between red and green.</p>",
+        " <p>Adjust the red/green balance with the left and right arrows on your keyboard. </p>",
+        "Pressing the right arrow key increases the red in the image <div style='float: center;'><img src='jspsych-6.0.1/stimuli/highred.gif'></img>",
+        "Pressing the left arrow key decreases the red in the image <div style='float: center;'><img src='jspsych-6.0.1/stimuli/lowred.gif'></img>",
+        " <p>When the disc appears to have the LEAST amount of flicker possible, press space to move on to the next trial.</p>"+
+        "<p>The point between minimum red and maximum red at which the image was the least amount of flicker is subjectively decided by you. Try to be consistent across trials as this point should be constant.</p>"+
+        "<p><div style='float: center;'><img src='jspsych-6.0.1/stimuli/midred.gif'?</img></p>",
+        " <p>Please try to get the image to the point with the absolute least amount of flicker. Press the continue button to begin. </p>"],
+        show_clickable_nav:true,
+        button_label_next: 'Continue',
+      }
+
+      var iso_test_block = {
+        type: "ISO",
+        choices: jsPsych.ALL_KEYS,
+        aperture_height:400,
+        aperture_width:400,
+        background_color:'rgb(255,255,255)',
+        dot_radius: 100
+            }
+      var iso_test_procedure={
+              timeline: [iso_test_block],
+          //  timeline: [test_block,test_block,test_block,test_block],
+          repetitions: 20
+            }
+      var iso_debrief_block = {
+              type:"html-keyboard-response",
+              trial_duration: 2000,
+              response_ends_trial: false,
+              stimulus:function(){
+
+              //  var trials=jsPsych.data.get().filter({trial_type:'ISO'})
+              //  var rvArray=trials.select('redVal')
+              //  var std=Math.sqrt(jsPsych.data.get().select('redVal').variance())
+                var std=jsPsych.data.get().select('redVal').sd();
+                var mean=jsPsych.data.get().select('redVal').mean();
+                var median=jsPsych.data.get().select('redVal').median();
+                jsPsych.data.get().addToLast({redValstd:std})
+                jsPsych.data.get().addToLast({redValmean:mean})
+                jsPsych.data.get().addToLast({redValmedian:median})
+
+                redValue=Math.round(jsPsych.data.get().select('redVal').mean());
+                greenValue=Math.round(jsPsych.data.get().select('greenVal').mean());
+
+                //return "<p> Avg Red Value: "+mean+" Median Red Value: " + median+" STD:"+std+"</p>"
+                return "<p> The main experiment will begin shortly."
+              }
+            }
+
+
+      var firstQ="During which interval did you feel more confident in your ability to see the image's location?"
+      var secondQ="Did the target during the <b>FIRST</b> interval appear to the left or the right of the fixation cross?"
+      var thirdQ="Did the target during the <b>SECOND</b> interval appear to the left or the right of the fixation cross?"
+      /////classically styled instructions
+      /*  var main_instructions_block = {
+          type: "html-keyboard-response",
+          stimulus: "<p>In this part of the experiment you will focus on a fixation cross in the center of your screen.</p>"+
+          "<p>You will consecutively be presented with 2 target dots (circles) across two intervals.</p>"+
+          "<p>Interval transitions are marked by a color change in the square background in which target dots are presented. </p>"+
+          "<p>The fixation cross will turn blue at the end of the second interval.</p>"+
+          "<p>After you will be asked which target dot's location you more confidently saw: The target dot during the first interval" +
+          " or the second interval.</p>"+
+          " Following the confidence assessment, you will be asked to indicate whether the target dot appeared to the left or the right of the central fixation cross for each interval.</p>"+
+          "<p>Some target dots may appear to disappear too fast to see or be too scrambled to perceive.  Please make your best guess when this is the case.</p>"+
+          "<p>Press enter to continue.</p>"
+
+        }*/
+///more modern perhaps
+          var main_instructions_block = {
+            type: "instructions",
+            pages: ["<p>In this part of the experiment you will focus on a fixation cross in the center of your screen.</p>"+
+            "<p>You will consecutively be presented with 2 target dots (circles) across two intervals.</p>",
+            "<p>Interval transitions are marked by a color change in the background. </p>"+
+            "<p>The fixation cross will turn blue at the end of the second interval.</p>"+
+            "<div style='float: center;'><img src='jspsych-6.0.1/stimuli/trial_simple.gif'></img>",
+            "<p>After you will be asked which target dot's location you more confidently saw: The target dot during the first interval" +
+            " or the second interval.</p>",
+            " Following the confidence assessment, you will be asked to indicate whether the target dot appeared to the left or the right of the central fixation cross for each interval.</p>"+
+            "<p>Some target dots may appear to disappear too fast to see or be too scrambled to perceive.  Please make your best guess when this is the case.</p>",
+            "<p>Press Continue to begin the experiment.</p>"
+          ],
+          show_clickable_nav:true,
+          allow_keys:true,
+          button_label_next: 'Continue',
+
+}
+
+
+
+  //jsPsych.data.get().select('lthVal').mean()
+        var turnaroundTrials=jsPsych.data.get().filter({turnaround: true});
+        var thresholdBelow=turnaroundTrials.select('lthVal').mean();
+
+        var initialize_staircases={
+          type: 'call-function',
+          func: function(){
+            lthVal2=(127-mPest_1u2d.staircase(mCorrect_1u2d));
+            lthVal3=(127-mPest_1u3d.staircase(mCorrect_1u3d));
+            noiseLevel2=1-pPest_1u2d.staircase(pCorrect_1u2d);
+            noiseLevel3=1-pPest_1u3d.staircase(pCorrect_1u3d);
+          }
+        }
+        var intensity_update={
+          type:"call-function",
+          func: function(){
+            console.log('updating staircases')
+            var last5trials=jsPsych.data.get().last(5)
+            var stimTrial=last5trials.filter({trial_type:'mp-localization'})
+            if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==2){
+              lthVal2=(127-mPest_1u2d.staircase(mCorrect_1u2d));
+              console.log('updated lthVal2')
+            }else if (stimTrial.select('staircase_type').values==3 || stimTrial.select('staircase_type').values==4){
+              lthVal3=(127-mPest_1u3d.staircase(mCorrect_1u3d));
+              console.log('updated lthval3')
+            }
+            if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==4){
+              noiseLevel2=1-pPest_1u2d.staircase(pCorrect_1u2d);
+              console.log('updated noiseLevel2')
+            }else if (stimTrial.select('staircase_type').values==2 || stimTrial.select('staircase_type').values==3){
+              noiseLevel3=1-pPest_1u3d.staircase(pCorrect_1u3d);
+              console.log('updated noiseLevel3')
+            }
+          }
+        }
+    var test_block_1 = {
+      type: "mp-localization",
+      aperture_width: 600,
+      aperture_height: 600,
+      choices: jsPsych.ALL_KEYS,
+      dot_radius: 50,
+      staircase_type:1,
+      lth_val: lthVal2,
+      magno_noise: noiseLevel2,
+      parvo_noise: noiseLevel2,
+      red_val:function(){return redValue},
+      green_val:function(){return greenValue},
+    }
+
+    var test_block_2 = {
+      type: "mp-localization",
+      aperture_width: 600,
+      aperture_height: 600,
+      choices: jsPsych.ALL_KEYS,
+      dot_radius: 50,
+      staircase_type: 2,
+      lth_val: lthVal2,
+      magno_noise: noiseLevel2,
+      parvo_noise: noiseLevel3,
+      red_val: function(){return redValue},
+      green_val: function(){return greenValue},
+    }
+    var test_block_3 = {
+      type: "mp-localization",
+      aperture_width: 600,
+      aperture_height: 600,
+      choices: jsPsych.ALL_KEYS,
+      dot_radius: 50,
+      staircase_type: 3,
+      lth_val: lthVal3,
+      magno_noise: noiseLevel3,
+      parvo_noise: noiseLevel3,
+      red_val: function(){return redValue},
+      green_val: function(){return greenValue},
+    }
+    var test_block_4 = {
+      type: "mp-localization",
+      aperture_width: 600,
+      aperture_height: 600,
+      choices: jsPsych.ALL_KEYS,
+      dot_radius: 50,
+      staircase_type: 4,
+      lth_val:lthVal3,
+      magno_noise:noiseLevel3,
+      parvo_noise: noiseLevel2,
+      red_val: function(){return redValue},
+      green_val: function(){return greenValue},
+    }
+
+
+
+        var response1={
+          type:"html-keyboard-response",
+          stimulus: [firstQ],
+          choices: [49,50],
+          prompt:"1-First Interval 2-Second Interval",
+          response_ends_trial: true,
+        }
+       var response2={
+         type:"html-keyboard-response",
+         stimulus: [secondQ],
+         choices: [37,39],
+         prompt:"Left Arrow Key-Left Right Arrow Key-Right",
+         response_ends_trial: true,
+       }
+       var response3={
+         type:"html-keyboard-response",
+         stimulus: [thirdQ],
+         choices: [37,39],
+         prompt:"Left Arrow Key-Left Right Arrow Key-Right",
+         response_ends_trial: true,
+         on_finish: function(){
+           var last4trials=jsPsych.data.get().last(4)
+           var stimTrial=last4trials.filter({trial_type:'mp-localization'})
+           var firstResp=last4trials.filter({stimulus: firstQ})
+           var secResp=last4trials.filter({stimulus: secondQ}).select('key_press').values
+           var thirdResp=last4trials.filter({stimulus: thirdQ}).select('key_press').values
+           var firstAngle=stimTrial.select('First Angle').values
+           var secondAngle=stimTrial.select('Second Angle').values
+           if (stimTrial.select('Stimulus Order').values==1){
+             if ((firstAngle==1 && secResp==37) || (firstAngle==2 && secResp==39)){
+               m_consecutive_incorrect=0;
+               m_consecutive_correct++;
+               if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==2){
+                 mCorrect_1u2d=true;
+                 jsPsych.data.get().addToLast({mCorrect_1u2d: true})
+
+               } else if (stimTrial.select('staircase_type').values==3 || stimTrial.select('staircase_type').values==4){
+                 mCorrect_1u3d=true;
+               }
+             }
+             if ((secondAngle==1 && thirdResp==37)||(secondAngle==2 && thirdResp==39)){
+               p_consecutive_incorrect=0;
+               p_consecutive_correct++;
+               if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==4){
+                 pCorrect_1u2d=true;
+               } else if (stimTrial.select('staircase_type').values==2 || stimTrial.select('staircase_type').values==3){
+                 pCorrect_1u3d=true;
+               }
+             }
+             if ((firstAngle==1 && secResp!=37) || (firstAngle==2 && secResp!=39)){
+               m_consecutive_incorrect++;
+               m_consecutive_correct=0;
+               if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==2){
+                 mCorrect_1u2d=false;
+               } else if (stimTrial.select('staircase_type').values==3 || stimTrial.select('staircase_type').values==4){
+                 mCorrect_1u3d=false;
+               }
+             }
+             if ((secondAngle==1 && thirdResp!=37)||(secondAngle==2 && thirdResp!=39)){
+               p_consecutive_incorrect++
+               p_consecutive_correct=0;
+               if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==4){
+                 pCorrect_1u2d=false;
+               } else if (stimTrial.select('staircase_type').values==2 || stimTrial.select('staircase_type').values==3){
+                 pCorrect_1u3d=false;
+               }
+             }
+           }else if(stimTrial.select('Stimulus Order').values==2){
+             if ((firstAngle==1 && secResp==37) || (firstAngle==2 && secResp==39)){
+               p_consecutive_incorrect=0;
+               p_consecutive_correct++;
+               if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==4){
+                 pCorrect_1u2d=true;
+               } else if (stimTrial.select('staircase_type').values==2 || stimTrial.select('staircase_type').values==3){
+                 pCorrect_1u3d=true;
+               }
+             }
+             if ((secondAngle==1 && thirdResp==37)||(secondAngle==2 && thirdResp==39)){
+               m_consecutive_incorrect=0;
+               m_consecutive_correct++;
+               if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==2){
+                 mCorrect_1u2d=true;
+               } else if (stimTrial.select('staircase_type').values==3 || stimTrial.select('staircase_type').values==4){
+                 mCorrect_1u3d=true;
+               }
+             }
+             if ((firstAngle==1 && secResp!=37) || (firstAngle==2 && secResp!=39)){
+               p_consecutive_incorrect++;
+               p_consecutive_correct=0;
+               if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==4){
+                 pCorrect_1u2d=false;
+               } else if (stimTrial.select('staircase_type').values==2 || stimTrial.select('staircase_type').values==3){
+                 pCorrect_1u3d=false;
+               }
+             }
+             if ((secondAngle==1 && thirdResp!=37)||(secondAngle==2 && thirdResp!=39)){
+               m_consecutive_incorrect++
+               m_consecutive_correct=0;
+               if (stimTrial.select('staircase_type').values==1 || stimTrial.select('staircase_type').values==2){
+                 mCorrect_1u2d=false;
+               } else if (stimTrial.select('staircase_type').values==3 || stimTrial.select('staircase_type').values==4){
+                 mCorrect_1u3d=false;
+               }
+             }
+
+           }
+
+
+
+         }
+       }
+
+
+       function makeAllTrialTypes(trialArray){
+         var newArray=[];
+         for (var i=0; i<trialArray.length; i++){
+           for (var t=0; t<trial_types.length; t++){
+             var tempTrial=Object.assign({},trialArray[i]);
+             tempTrial.trial_type=trial_types[t];
+             newArray.push(tempTrial);
+           }
+         }
+       return newArray
+       }
+
+       function interleavePostTrialBlocks(trialArray){
+         var newArray=[];
+         for (var i=0;i<trialArray.length;i++){
+           newArray.push(trialArray[i],response1,response2,response3,intensity_update)
+         }
+         return newArray
+       }
+       function insertMiddleBreak(trialArray,break_block){
+         midIdx=Math.floor(trialArray.length/2);
+         trialArray.splice(midIdx,0,break_block)
+         return trialArray
+       }
+
+
+
+
+       var break_block={
+         type: 'html-keyboard-response',
+         stimulus: "Feel free to take a break for up to 60s.  Press any key to continue.  The experiment will resume automatically in 60s if no key is pressed.",
+         choices: jsPsych.ALL_KEYS,
+         trial_duration: 60000,
+         response_ends_trial: true,
+
+
+       }
+
+       var trialBones=[test_block_1,test_block_2,test_block_3,test_block_4]
+       var allTrialTypes=makeAllTrialTypes(trialBones)
+       var trialsArray=jsPsych.randomization.repeat(allTrialTypes,5)
+       var allTrials=interleavePostTrialBlocks(trialsArray);
+       var allTrials=insertMiddleBreak(allTrials,break_block);
+
+
+
+      var main_test_procedure={
+         timeline: allTrials,
+         //timeline_variables:[{trial_type:'1'},{trial_type:'2'},{trial_type:'3'},{trial_type:'4'}],//1/2 equal M-first 3/4 equal P-first
+
+       }
+
+
+       alt_timeline=[]
+
+       alt_timeline.push({
+         type: 'fullscreen',
+         fullscreen_mode: true
+       })
+      alt_timeline.push(calib_loop_timeline,iso_instructions_block,fixation_block,iso_test_procedure,iso_debrief_block)
+      alt_timeline.push(main_instructions_block,fixation_block,initialize_staircases,main_test_procedure,break_block,main_test_procedure)
+      jsPsych.init({
+        timeline:alt_timeline,
+        on_finish: function(){
+          jsPsych.data.get().localSave('csv','localizationPilot.csv'); //Save the data locally in a .csv file
+
+          jsPsych.data.displayData();}
+      })
+
+
+
+      </script>
+      </html>

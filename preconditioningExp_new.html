@@ -1,0 +1,244 @@
+<! doctype html>
+<html>
+  <head>
+  <style>
+  body{
+    background-color: rgb(255,255,255);
+  }
+  </style>
+  <title> Main Wrapper</title>
+  <script src = "jspsych-6.0.1/jspsych.js"></script>
+
+  <script src = "jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-fixation.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-call-function.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-association.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-instructions.js"></script>
+
+  <script src = "jspsych-6.0.1/pest.js"></script>
+  <link href = "jspsych-6.0.1/css/jspsych.css" rel = "stylesheet"></link>
+  </head>
+  <body>
+  </body>
+  <script>
+
+var dist; //global variable for participants' self-reported distance from monitor
+var cmPer200Px; //self-reported measured cm for 200 px black bar image
+var deg_per_px; //global for calculated px per degree
+      var vd_calib={
+        type: 'survey-text',
+        preamble:"<p>We need to calibrate the experiment to your computer monitor.  Please answer the following questions by inputting a number into each box.</P>"+
+        "<P>Press continue when finished (Note: Pressing continue will not advance the experiment until numbers are entered below):</p>"+
+            "<p><font color='red'>Please use a ruler or other measuring instrument if available.  Otherwise please make your best estimate (Note that 1 inch = ~2.5 cm). </font></p>",
+        questions:[
+          {prompt: 'How many centimeters (cm) is your face from your computer monitor?', value: 'cm', rows:1, columns:3},
+          {prompt: "<p>How many centimeters (cm) does this black bar measure on your screen?</p>"+
+                    "<div style='float: center;'><img src='jspsych-6.0.1/stimuli/200px_blackbar.png'></img>", value: 'cm', rows:1,columns:3},
+
+        ],
+        on_finish: function(){
+          var str=jsPsych.data.get().select('responses').values[jsPsych.data.get().select('responses').values.length-1]
+          dist=parseFloat(str.slice(str.indexOf('Q0')+5,str.indexOf('Q1')-3))//pulls first response from response string
+          cmPer200Px=parseFloat(str.slice(str.indexOf('Q1')+5))//pulls second response from response string
+          deg_per_px = (Math.atan2(.5*cmPer200Px, dist) / (.5*200))*180/Math.PI;
+          console.log(20/deg_per_px)
+
+        },
+
+
+      }
+      var vd_calib_ifApertureTooBig={
+        type: 'survey-text',
+        preamble:"<p><font color=red>The experiment will not fit on your screen at your current viewing distance.</P>"+
+        "<p>Please move closer to your computer screen and reinput your viewing distance. A reasonable viewing distance is around 60cm. </font>"+
+        "<P>Press continue when finished (Note: Pressing continue will not advance the experiment until numbers are entered below):</p>"+
+            "<p><font color='red'>Please use a ruler or other measuring instrument if available.  Otherwise please make your best estimate (Note that 1 inch = ~2.5 cm). </font></p>",
+        questions:[
+          {prompt: 'How many centimeters (cm) is your face from your computer monitor?', value: 'cm', rows:1, columns:3},
+          {prompt: "<p>How many centimeters (cm) does this black bar measure on your screen?</p>"+
+                    "<div style='float: center;'><img src='jspsych-6.0.1/stimuli/200px_blackbar.png'></img>", value: 'cm', rows:1,columns:3},
+
+        ],
+        on_finish: function(){
+          var str=jsPsych.data.get().select('responses').values[jsPsych.data.get().select('responses').values.length-1]
+          dist=parseFloat(str.slice(str.indexOf('Q0')+5,str.indexOf('Q1')-3))//pulls first response from response string
+          cmPer200Px=parseFloat(str.slice(str.indexOf('Q1')+5))//pulls second response from response string
+          deg_per_px = (Math.atan2(.5*cmPer200Px, dist) / (.5*200))*180/Math.PI;
+          console.log(deg_per_px)
+
+        },
+
+
+      }
+
+      var size_chill=false;
+      var calib_if_node={
+        timeline:[vd_calib_ifApertureTooBig],
+        conditional_function:function(){
+          var currAptHeight=Math.round(20/deg_per_px);
+          var currViewHole=window.outerHeight;
+          if (currAptHeight>currViewHole){
+            size_chill=false;
+            return true
+          }else{
+            size_chill=true;
+            return false
+          }
+        }
+      }
+      var calib_loop_if={
+      timeline:[calib_if_node],
+      loop_function:function(){
+        if(size_chill==false){
+          return true
+        }else{
+          return false
+
+        }
+        }
+      }
+      var calib_loop_timeline={
+        timeline:[vd_calib,calib_loop_if],
+        loop_function: function(){
+
+          if (isNaN(deg_per_px)){
+            return true
+          }else{
+            return false
+          }
+        },
+      }
+
+      var fixation_block={
+        type:'fixation',
+        fixation_cross_color:"red",
+        trial_duration:1000,
+        background_color: 'rgb(255,255,255)',
+      }
+
+
+      var main_trial={
+        type:'association',
+        trial_duration:5000,
+        response_ends_trial:false,
+        coherent_direction:0,
+        coherence:0.8,
+        aperture_width:window.innerWidth-100,
+        aperture_height:window.innerHeight-100,
+        aperture_type:3,
+      }
+
+
+
+
+
+      function repeat_array(reps,array){
+      var arr= []
+      for (var i=0; i < reps ;i++){
+        arr.push(array);
+      }
+      return arr
+    }
+
+
+
+
+
+///more modern perhaps
+          var main_instructions_block = {
+            type: "instructions",
+            pages: ["<p>In this part of the experiment you will focus on a fixation cross in the center of your screen.</p>"+
+            "<p>You will consecutively be presented with 2 target dots (circles) across two intervals.</p>",
+            "<p>Interval transitions are marked by a color change in the background. </p>"+
+            "<p>The fixation cross will turn blue at the end of the second interval.</p>"+
+            "<div style='float: center;'><img src='jspsych-6.0.1/stimuli/trial_simple.gif'></img>",
+            "<p>After you will be asked which target dot's location you more confidently saw: The target dot during the first interval" +
+            " or the second interval.</p>",
+            " Following the confidence assessment, you will be asked to indicate whether the target dot appeared to the left or the right of the central fixation cross for each interval.</p>"+
+            "<p>Some target dots may appear to disappear too fast to see or be too scrambled to perceive.  Please make your best guess when this is the case.</p>",
+            "<p>Press Continue to begin the experiment.</p>"
+          ],
+          show_clickable_nav:true,
+          allow_keys:true,
+          button_label_next: 'Continue',
+
+}
+
+
+
+
+       function makeAllTrialTypes(trialArray){
+         var newArray=[];
+         for (var i=0; i<trialArray.length; i++){
+           for (var t=0; t<trial_types.length; t++){
+             var tempTrial=Object.assign({},trialArray[i]);
+             tempTrial.trial_type=trial_types[t];
+             newArray.push(tempTrial);
+           }
+         }
+       return newArray
+       }
+
+       function interleavePostTrialBlocks(trialArray){
+         var newArray=[];
+         for (var i=0;i<trialArray.length;i++){
+           newArray.push(trialArray[i],response1,response2,response3,intensity_update)
+         }
+         return newArray
+       }
+       function insertMiddleBreak(trialArray,break_block){
+         midIdx=Math.floor(trialArray.length/2);
+         trialArray.splice(midIdx,0,break_block)
+         return trialArray
+       }
+
+
+
+
+       var break_block={
+         type: 'html-keyboard-response',
+         stimulus: "Feel free to take a break for up to 60s.  Press any key to continue.  The experiment will resume automatically in 60s if no key is pressed.",
+         choices: jsPsych.ALL_KEYS,
+         trial_duration: 60000,
+         response_ends_trial: true,
+
+
+       }
+
+       //var trialBones=[test_block_1,test_block_2,test_block_3,test_block_4]
+      // var allTrialTypes=makeAllTrialTypes(trialBones)
+       //var trialsArray=jsPsych.randomization.repeat(allTrialTypes,5)
+       //var allTrials=interleavePostTrialBlocks(trialsArray);
+       //var allTrials=insertMiddleBreak(allTrials,break_block);
+
+
+
+    //  var main_test_procedure={
+      //   timeline: allTrials,
+
+       //}
+
+
+       timeline=[]
+
+       timeline.push({
+         type: 'fullscreen',
+         fullscreen_mode: true
+       })
+    //  timeline.push(calib_loop_timeline,iso_instructions_block,fixation_block,iso_test_procedure,iso_debrief_block)
+      //timeline.push(main_instructions_block,fixation_block,initialize_staircases,main_test_procedure,break_block,main_test_procedure)
+      timeline.push(main_trial)
+      jsPsych.init({
+        timeline:timeline,
+        on_finish: function(){
+        //  jsPsych.data.get().localSave('csv','localizationPilot.csv'); //Save the data locally in a .csv file
+
+          jsPsych.data.displayData();}
+      })
+
+
+
+      </script>
+      </html>
