@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="../jspsych.js"></script>
+  <script src="../plugins/jspsych-reward.js"></script>
+  <link rel="stylesheet" href="../css/jspsych.css"></link>
+  <style>
+    img {
+      width: 300px;
+    }
+  </style>
+</head>
+<body></body>
+<script>
+
+  var trial_1 = {
+    type: 'reward',
+    stimulus: 'img/happy_face_1.jpg',
+    choices: [37,39],
+    prompt: '<p>Which image will you bet on? (Left or Right Arrow)</p>',
+    response_ends_trial: true,
+  }
+
+
+  jsPsych.init({
+    timeline: [trial_1],
+    on_finish: function() {
+      jsPsych.data.displayData();
+    },
+    default_iti: 250
+  });
+</script>
+
+</html>

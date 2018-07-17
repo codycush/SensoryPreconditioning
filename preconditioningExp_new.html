@@ -2,6 +2,9 @@
 <html>
   <head>
   <style>
+  img {
+    width: 300px;
+  }
   body{
     background-color: rgb(255,255,255);
   }
@@ -16,14 +19,57 @@
   <script src = "jspsych-6.0.1/plugins/jspsych-association.js"></script>
   <script src = "jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
   <script src = "jspsych-6.0.1/plugins/jspsych-instructions.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-RDK.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-reward.js"></script>
+  <script src = "jspsych-6.0.1/plugins/jspsych-decision.js"></script>
 
   <script src = "jspsych-6.0.1/pest.js"></script>
   <link href = "jspsych-6.0.1/css/jspsych.css" rel = "stylesheet"></link>
   </head>
   <body>
+    <div id="canvasesdiv" style="position:absolute;">
+      <canvas id="layer1" style="z-index: 1;position:absolute;margin:auto;display:block;left:0px;top:0px;">
+      </canvas>
+      <canvas id="layer2" style="z-index: 2;position:absolute;margin:auto;left:0px;top:0px;">
+      </canvas>
+    </div>
   </body>
   <script>
 
+    /*var canvas=document.getElementById("layer1");
+  	var layer2=document.getElementById("layer2");
+    var ctx=layer1.getContext("2d");
+		var ctx2=layer2.getContext("2d");*/
+    var a_list=[];
+    var b_list=[];
+    var c_list=[];
+    var d_list=[];
+    var cat_names=['butterflies','horses','guitars','chairs']
+    var stim_cats=[8,15,37,40] //unused cats ,19,26,28,33,35,36
+    var first_num=[1,2,3,4,5,6]
+    var second_num=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      for (var b=0;b<first_num.length;b++){
+        for (var c=0;c<second_num.length;c++){
+          a_list.push(stim_cats[0]+'_'+first_num[b]+'_'+second_num[c]) //butteflies
+          b_list.push(stim_cats[1]+'_'+first_num[b]+'_'+second_num[c]) //horses
+          c_list.push(stim_cats[2]+'_'+first_num[b]+'_'+second_num[c])//guitars
+          d_list.push(stim_cats[3]+'_'+first_num[b]+'_'+second_num[c])//chairs
+
+        }
+      }
+
+    console.log(a_list,b_list,c_list,d_list)
+    var assoc_list_a=shuffle(a_list);
+    var assoc_list_b=shuffle(b_list);
+    var assoc_list_c=shuffle(c_list);
+    var assoc_list_d=shuffle(d_list);
+
+    var reward_list_a=shuffle(a_list);
+    var reward_list_b=shuffle(b_list);
+    var reward_list_c=shuffle(c_list);
+    var reward_list_d=shuffle(d_list);
+
+		//console.log(ctx2)
 var dist; //global variable for participants' self-reported distance from monitor
 var cmPer200Px; //self-reported measured cm for 200 px black bar image
 var deg_per_px; //global for calculated px per degree
@@ -117,23 +163,74 @@ var deg_per_px; //global for calculated px per degree
         trial_duration:1000,
         background_color: 'rgb(255,255,255)',
       }
+      var trialCounter=0;
+      var randPos=[0,1,2,3];
+      var imageset={
+        image1: 'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_a[trialCounter] +'.png',
+        image2:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_b[trialCounter] +'.png',
+        image3:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_c[trialCounter] +'.png',
+        image4:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_d[trialCounter] +'.png',
 
-
+      }
       var main_trial={
         type:'association',
-        trial_duration:5000,
+        trial_duration:4500,
         response_ends_trial:false,
-        coherent_direction:0,
-        coherence:0.8,
-        aperture_width:window.innerWidth-100,
-        aperture_height:window.innerHeight-100,
-        aperture_type:3,
+        coherent_direction:jsPsych.timelineVariable('coherent_direction'),
+        coherence:1.0,
+        move_distance:3,
+        aperture_width:600,
+        aperture_height:600,
+
+        aperture_type:4,
+        fixation_cross:true,
+        border:true,
+        choices: [37,38,39,40],
+        on_finish: function(){
+          trialCounter=trialCounter+1;
+          var pos=[0,1,2,3];
+          randPos=shuffle(pos);
+          var stim_sel=[assoc_list_a[trialCounter],assoc_list_b[trialCounter],assoc_list_c[trialCounter],assoc_list_d[trialCounter]]
+          imageset.image1='jsPsych-6.0.1/stimuli/vince_stimuli/' + stim_sel[randPos[0]] +'.png';
+          imageset.image2='jsPsych-6.0.1/stimuli/vince_stimuli/' + stim_sel[randPos[1]] +'.png';
+          imageset.image3='jsPsych-6.0.1/stimuli/vince_stimuli/' + stim_sel[randPos[2]] +'.png';
+          imageset.image4='jsPsych-6.0.1/stimuli/vince_stimuli/' + stim_sel[randPos[3]] +'.png';
+          console.log(imageset)
+        }
+      }
+      var reward_imageset={
+        image1: 'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_a[trialCounter] +'.png',
+        image2:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_b[trialCounter] +'.png',
+        image3:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_c[trialCounter] +'.png',
+        image4:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_d[trialCounter] +'.png',
+
+      }
+
+      var reward_trial = {
+        type: 'reward',
+        stimulus: 'img/happy_face_1.jpg',
+        choices: [37,39],
+        prompt: '<p>Which image will you bet on? (Left or Right Arrow)</p>',
+        response_ends_trial: true,
       }
 
 
-
-
-
+      var decision_trial = {
+        type: 'decision',
+        trial_duration:4500,
+        number_of_apertures:2,
+        response_ends_trial:false,
+        coherent_direction:[0,90],
+        coherence:1.0,
+        move_distance:3,
+        aperture_width:300,
+        aperture_height:300,
+        aperture_center_x:[(window.innerWidth/4),(window.innerWidth*3/4)],
+        aperture_center_y:[window.innerHeight/2,window.innerHeight/2],
+        aperture_type:4,
+        fixation_cross:false,
+        border:true,
+      }
       function repeat_array(reps,array){
       var arr= []
       for (var i=0; i < reps ;i++){
@@ -142,23 +239,27 @@ var deg_per_px; //global for calculated px per degree
       return arr
     }
 
+    function shuffle(a) {
+        var j, x, i;
+        var newArray
+        newArray=a;
+        for (i = a.length - 1; i > 0; i--) {
+            j = Math.floor(Math.random() * (i + 1));
+            x = a[i];
+            newArray[i] = a[j];
+            newArray[j] = x;
 
+    }
+    return newArray
+    }//shuffle
 
 
 
 ///more modern perhaps
           var main_instructions_block = {
             type: "instructions",
-            pages: ["<p>In this part of the experiment you will focus on a fixation cross in the center of your screen.</p>"+
-            "<p>You will consecutively be presented with 2 target dots (circles) across two intervals.</p>",
-            "<p>Interval transitions are marked by a color change in the background. </p>"+
-            "<p>The fixation cross will turn blue at the end of the second interval.</p>"+
-            "<div style='float: center;'><img src='jspsych-6.0.1/stimuli/trial_simple.gif'></img>",
-            "<p>After you will be asked which target dot's location you more confidently saw: The target dot during the first interval" +
-            " or the second interval.</p>",
-            " Following the confidence assessment, you will be asked to indicate whether the target dot appeared to the left or the right of the central fixation cross for each interval.</p>"+
-            "<p>Some target dots may appear to disappear too fast to see or be too scrambled to perceive.  Please make your best guess when this is the case.</p>",
-            "<p>Press Continue to begin the experiment.</p>"
+            pages: ["In this portion of the experiment, you will view 4 categories of images presented on top of a series of moving dots."+
+            ""
           ],
           show_clickable_nav:true,
           allow_keys:true,
@@ -222,6 +323,20 @@ var deg_per_px; //global for calculated px per degree
 
 
        timeline=[]
+       var association_test_procedure={
+         timeline:[main_trial],
+         timeline_variables:[{coherent_direction: '0'},{coherent_direction:'180'}],
+         randomize_order: true,
+         repetitions:10,
+       }
+
+       var reward_test_procedure={
+         timeline:[reward_trial],
+         repetitions:5
+       }
+       var decision_test_procedure={
+         timeline:[decision_trial]
+       }
 
        timeline.push({
          type: 'fullscreen',
@@ -229,7 +344,9 @@ var deg_per_px; //global for calculated px per degree
        })
     //  timeline.push(calib_loop_timeline,iso_instructions_block,fixation_block,iso_test_procedure,iso_debrief_block)
       //timeline.push(main_instructions_block,fixation_block,initialize_staircases,main_test_procedure,break_block,main_test_procedure)
-      timeline.push(main_trial)
+    //  timeline.push(association_test_procedure)
+    //  timeline.push(reward_test_procedure)
+      timeline.push(main_instructions_block,decision_test_procedure)
       jsPsych.init({
         timeline:timeline,
         on_finish: function(){

@@ -25,7 +25,7 @@
 
 */
 
-
+//document.addEventListener("DOMContentLoaded",function(){
 jsPsych.plugins["association"] = (function() {
 
 	var plugin = {};
@@ -280,8 +280,9 @@ jsPsych.plugins["association"] = (function() {
 		var apertureHeight = trial.aperture_height; //How many pixels high the aperture is. Only relevant for ellipse and rectangle apertures. For circle and square, this is ignored.
 		var dotColor = trial.dot_color; //Color of the dots
 		var backgroundColor = trial.background_color; //Color of the background
-		var apertureCenterX = trial.aperture_center_x; // The x-coordinate of center of the aperture on the screen, in pixels
-		var apertureCenterY = trial.aperture_center_y; // The y-coordinate of center of the aperture on the screen, in pixels
+
+		var selectedImg;
+		var correctChoice=false;
 
 
 		/* RDK type parameter
@@ -342,12 +343,16 @@ jsPsych.plugins["association"] = (function() {
 		//--------------------------------------
 
 		//--------Set up Canvas begin-------
+		var new_html='test'
+		display_element.innerHTML = new_html;
 
 		//Create a canvas element and append it to the DOM
-		var canvas = document.createElement("canvas");
+		//var canvas = document.createElement("canvas");
 		display_element.appendChild(canvas);
+		display_element.appendChild(layer2);
+	/*	var layer2=document.getElementById("layer2");
 
-
+		var ctx2=layer2.getContext("2d");*/
 		//The document body IS 'display_element' (i.e. <body class="jspsych-display-element"> .... </body> )
 		var body = document.getElementsByClassName("jspsych-display-element")[0];
 		//Remove the margins and paddings of the display_element
@@ -360,12 +365,14 @@ jsPsych.plugins["association"] = (function() {
 		canvas.style.padding = 0;
 
 		//Get the context of the canvas so that it can be painted on.
-		var ctx = canvas.getContext("2d");
+//		var ctx = canvas.getContext("2d");
 
 		//Declare variables for width and height, and also set the canvas width and height to the window width and height
-		var canvasWidth = canvas.width =window.innerWidth-100;// window.innerWidth-100
-		var canvasHeight = canvas.height = window.innerHeight-100;//window.innerHeight-100;
-
+		var canvasWidth = canvas.width =layer2.width=window.innerWidth-100;// window.innerWidth-100
+		var canvasHeight = canvas.height = layer2.height=window.innerHeight-100;//window.innerHeight-100;
+		var apertureCenterX = canvasWidth/2; // The x-coordinate of center of the aperture on the screen, in pixels
+		var apertureCenterY = canvasHeight/2; // The y-coordinate of center of the aperture on the screen, in pixels
+		console.log(apertureCenterX,apertureCenterY);
 		//Set the canvas background color
 		canvas.style.backgroundColor = backgroundColor;
 
@@ -438,7 +445,8 @@ jsPsych.plugins["association"] = (function() {
 
 		//Declare a global timeout ID to be initialized below in animateDotMotion function and to be used in after_response function
 		var timeoutID;
-
+		var rtTimeout;
+		var rt_timeout=4200;
 		//Declare global variable to be defined in startKeyboardListener function and to be used in end_trial function
 		var keyboardListener;
 
@@ -449,8 +457,9 @@ jsPsych.plugins["association"] = (function() {
 		var numberOfFrames = 0;
 
 		//This runs the dot motion simulation, updating it according to the frame refresh rate of the screen.
+		drawFix();
+		showImages();
 		animateDotMotion();
-
 
 		//--------RDK variables and function calls end--------
 
@@ -476,6 +485,66 @@ jsPsych.plugins["association"] = (function() {
 					allow_held_key: false //Only register the key once, after this getKeyboardResponse function is called. (Check JsPsych docs for better info under 'jsPsych.pluginAPI.getKeyboardResponse').
 				});
 			}
+		}
+		var imageOffset=150; //px to offset images from center
+		var imgSize=100;
+		function showImages(){
+
+			var img1=new Image();
+			img1.onload=function(){
+				ctx2.drawImage(img1,(canvasWidth/2-(imgSize/2))+imageOffset,(canvasHeight/2-(imgSize/2)),imgSize,imgSize)
+			}
+			img1.src=imageset.image1
+			console.log(img1.src)
+			var img2=new Image();
+			img2.onload=function(){
+				ctx2.drawImage(img2,(canvasWidth/2-(imgSize/2))-imageOffset,(canvasHeight/2-(imgSize/2)),imgSize,imgSize)
+			}
+			img2.src=imageset.image2
+			var img3=new Image();
+			img3.onload=function(){
+				ctx2.drawImage(img3,(canvasWidth/2-(imgSize/2)),(canvasHeight/2-(imgSize/2))+imageOffset,imgSize,imgSize)
+			}
+			img3.src=imageset.image3
+			var img4=new Image();
+			img4.onload=function(){
+				ctx2.drawImage(img4,(canvasWidth/2-(imgSize/2)),(canvasHeight/2-(imgSize/2))-imageOffset,imgSize,imgSize)
+			}
+			img4.src=imageset.image4
+		}
+		function drawFix() {
+			//horizontal
+			ctx.beginPath();
+			ctx.lineWidth=fixationCrossThickness;
+			ctx.moveTo(canvasWidth/2 - fixationCrossWidth, canvasHeight/2);
+			ctx.lineTo(canvasWidth/2 + fixationCrossWidth, canvasHeight/2);
+			ctx.strokeStyle = fixationCrossColor;
+			ctx.stroke();
+			ctx.closePath();
+			//vertical
+			ctx.beginPath();
+			ctx.lineWidth = fixationCrossThickness;
+			ctx.moveTo(canvasWidth/2,canvasHeight/2 - fixationCrossHeight)
+			ctx.lineTo(canvasWidth/2,canvasHeight/2 + fixationCrossHeight)
+			ctx.strokeStyle = fixationCrossColor;
+			ctx.stroke();
+			ctx.closePath();
+/*
+			ctx.beginPath();
+			ctx.lineWidth = fixationCrossThickness;
+			ctx.moveTo(canvasWidth/2 - fixationCrossWidth, canvasHeight/2);
+			ctx.lineTo(canvasWidth/2 + fixationCrossWidth, canvasHeight/2);
+			ctx.fillStyle = fixationCrossColor;
+			ctx.stroke();
+
+			//Vertical line
+			ctx.beginPath();
+			ctx.lineWidth = fixationCrossThickness;
+			ctx.moveTo(canvasWidth/2, canvasHeight/2 - fixationCrossHeight);
+			ctx.lineTo(canvasWidth/2, canvasHeight/2 + fixationCrossHeight);
+			ctx.fillStyle = fixationCrossColor;
+			ctx.stroke();
+			*/
 		}
 
 		//Function to end the trial proper
@@ -506,7 +575,7 @@ jsPsych.plugins["association"] = (function() {
 			var trial_data = {
 				"rt": response.rt, //The response time
 				"key_press": response.key, //The key that the subject pressed
-				"correct": correctOrNot(), //If the subject response was correct
+				"correct": correctChoice, //If the subject response was correct
 				"choices": trial.choices, //The set of valid keys
 				"correct_choice": trial.correct_choice, //The correct choice
 				"trial_duration": trial.trial_duration, //The trial duration
@@ -520,8 +589,8 @@ jsPsych.plugins["association"] = (function() {
 				"dot_radius": trial.dot_radius,
 				"dot_life": trial.dot_life,
 				"move_distance": trial.move_distance,
-				"aperture_width": trial.aperture_width,
-				"aperture_height": trial.aperture_height,
+				"aperture_width": apertureWidth,
+				"aperture_height": apertureHeight,
 				"dot_color": trial.dot_color,
 				"background_color": trial.background_color,
 				"RDK_type": trial.RDK_type,
@@ -541,7 +610,18 @@ jsPsych.plugins["association"] = (function() {
 				"border_thickness": trial.border_thickness,
 				"border_color": trial.border_color,
 				"canvas_width": canvasWidth,
-				"canvas_height": canvasHeight
+				"canvas_height": canvasHeight,
+				"image1":imageset.image1,
+				"image2":imageset.image2,
+				"image3":imageset.image3,
+				"image4":imageset.image4,
+				"list_order":randPos,
+				"right_image":cat_names[randPos[0]],
+				"left_image":cat_names[randPos[1]],
+				"down_image":cat_names[randPos[2]],
+				"up_image":cat_names[randPos[3]],
+				"selected_image":selectedImg,
+
 
 			}
 
@@ -560,13 +640,31 @@ jsPsych.plugins["association"] = (function() {
 		function after_response(info) {
 
 			//Kill the timeout if the subject has responded within the time given
-			window.clearTimeout(timeoutID);
-
+//	window.clearTimeout(timeoutID);
+			window.clearTimeout(rtTimeout);
 			//If the response has not been recorded, record it
 			if (response.key == -1) {
 				response = info; //Replace the response object created above
 			}
+			console.log(response.key)
+			if(response.key == 37){
+				selectedImg=cat_names[randPos[1]]
+			}else if (response.key==38){
+				selectedImg=cat_names[randPos[3]]
+			}else if (response.key==39){
+				selectedImg=cat_names[randPos[0]]
+			}else if (response.key==40){
+				selectedImg=cat_names[randPos[2]]
+			}
+			if(coherentDirection==0 && selectedImg=='guitars'){
+				correctChoice=true
+			}else if (coherentDirection==180 & selectedImg=='butterflies'){
+				correctChoice=true
+			}else{
+				correctChoice=false
+			}
 
+			dispFeedback();
 			//If the parameter is set such that the response ends the trial, then end the trial
 			if (trial.response_ends_trial) {
 				end_trial();
@@ -593,6 +691,24 @@ jsPsych.plugins["association"] = (function() {
 		}
 
 		//----JsPsych Functions End----
+		function dispFeedback(){
+			if (correctChoice==false && response.key !== -1){
+			var txt2disp='Incorrect! No $$';
+			ctx2.fillStyle='red';
+		}else if (correctChoice==false && response.key == -1){
+			var txt2disp='Late! No $$';
+			ctx2.fillStyle='red';
+
+		}else if (correctChoice==true){
+			var txt2disp='Correct! +$';
+			ctx2.fillStyle='green';
+		}
+			ctx2.font = "24px Calibri";
+			ctx2.textAlign='center';
+			ctx2.fillText(txt2disp,apertureCenterX,apertureCenterY-fixationCrossWidth)
+
+
+		}
 
 		//----RDK Functions Begin----
 
@@ -891,8 +1007,8 @@ jsPsych.plugins["association"] = (function() {
 
 		//Draw the dots on the canvas after they're updated
 		function draw() {
-
       //Load in the current set of dot array for easy handling
+	//		showImages();
       var dotArray = dotArray2d[currentSetArray[currentApertureNumber]];
 
 			//Loop through the dots one by one and draw them
@@ -906,8 +1022,8 @@ jsPsych.plugins["association"] = (function() {
 
 		    //Draw the fixation cross if we want it
 		    if(fixationCross === true){
-
-		      //Horizontal line
+					drawFix();
+		     /* //Horizontal line
 		      ctx.beginPath();
 		      ctx.lineWidth = fixationCrossThickness;
 		      ctx.moveTo(canvasWidth/2 - fixationCrossWidth, canvasHeight/2);
@@ -921,7 +1037,7 @@ jsPsych.plugins["association"] = (function() {
 		      ctx.moveTo(canvasWidth/2, canvasHeight/2 - fixationCrossHeight);
 		      ctx.lineTo(canvasWidth/2, canvasHeight/2 + fixationCrossHeight);
 		      ctx.fillStyle = fixationCrossColor;
-		      ctx.stroke();
+		      ctx.stroke();*/
 		    }
 
 	      	//Draw the border if we want it
@@ -944,7 +1060,7 @@ jsPsych.plugins["association"] = (function() {
 	        	}//End of if square or
 
       		}//End of if border === true
-
+				//	showImages();
 		}//End of draw
 
 		//Update the dots with their new location
@@ -1262,12 +1378,14 @@ jsPsych.plugins["association"] = (function() {
 						//If the trial duration is set, then set a timer to count down and call the end_trial function when the time is up
 						//(If the subject did not press a valid keyboard response within the trial duration, then this will end the trial)
 						timeoutID = window.setTimeout(end_trial,trial.trial_duration); //This timeoutID is then used to cancel the timeout should the subject press a valid key
+						rtTimeout=window.setTimeout(dispFeedback,rt_timeout)
+
 						//The timer has started, so we set the variable to true so it does not start more timers
 						timerHasStarted = true;
 					}
 
 					updateAndDraw(); //Update and draw each of the dots in their respective apertures
-
+				//	showImages();
 					//If this is before the first frame, then start the timestamp
 					if(previousTimestamp === undefined){
 						previousTimestamp = performance.now();
@@ -1304,3 +1422,4 @@ jsPsych.plugins["association"] = (function() {
 	//Return the plugin object which contains the trial
 	return plugin;
 })();
+//});//on doc load function
