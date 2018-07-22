@@ -343,13 +343,18 @@ jsPsych.plugins["association"] = (function() {
 		//--------------------------------------
 
 		//--------Set up Canvas begin-------
-		var new_html='test'
-		display_element.innerHTML = new_html;
-
+	//	var new_html='test'
+		//display_element.innerHTML = new_html;
+		   // var canvas=document.getElementById("layer1");
+		  	//var layer2=document.getElementById("layer2");
+		console.log(canvas,layer2)
 		//Create a canvas element and append it to the DOM
 		//var canvas = document.createElement("canvas");
 		display_element.appendChild(canvas);
 		display_element.appendChild(layer2);
+
+		var ctx=canvas.getContext("2d");
+		//var ctx2=layer2.getContext("2d");
 	/*	var layer2=document.getElementById("layer2");
 
 		var ctx2=layer2.getContext("2d");*/
@@ -368,8 +373,8 @@ jsPsych.plugins["association"] = (function() {
 //		var ctx = canvas.getContext("2d");
 
 		//Declare variables for width and height, and also set the canvas width and height to the window width and height
-		var canvasWidth = canvas.width =layer2.width=window.innerWidth-100;// window.innerWidth-100
-		var canvasHeight = canvas.height = layer2.height=window.innerHeight-100;//window.innerHeight-100;
+		var canvasWidth = canvas.width =layer2.width=window.innerWidth;// window.innerWidth-100
+		var canvasHeight = canvas.height = layer2.height=window.innerHeight;//window.innerHeight-100;
 		var apertureCenterX = canvasWidth/2; // The x-coordinate of center of the aperture on the screen, in pixels
 		var apertureCenterY = canvasHeight/2; // The y-coordinate of center of the aperture on the screen, in pixels
 		console.log(apertureCenterX,apertureCenterY);
@@ -486,8 +491,8 @@ jsPsych.plugins["association"] = (function() {
 				});
 			}
 		}
-		var imageOffset=150; //px to offset images from center
-		var imgSize=100;
+		var imageOffset=200; //px to offset images from center
+		var imgSize=200;
 		function showImages(){
 
 			var img1=new Image();
@@ -621,6 +626,7 @@ jsPsych.plugins["association"] = (function() {
 				"down_image":cat_names[randPos[2]],
 				"up_image":cat_names[randPos[3]],
 				"selected_image":selectedImg,
+				"current_balance":currBalance,
 
 
 			}
@@ -698,10 +704,12 @@ jsPsych.plugins["association"] = (function() {
 		}else if (correctChoice==false && response.key == -1){
 			var txt2disp='Late! No $$';
 			ctx2.fillStyle='red';
+			jsPsych.pluginAPI.cancelKeyboardResponse(keyboardListener);
 
 		}else if (correctChoice==true){
-			var txt2disp='Correct! +$';
+			var txt2disp='Correct! +$0.05';
 			ctx2.fillStyle='green';
+			currBalance=currBalance+0.05;
 		}
 			ctx2.font = "24px Calibri";
 			ctx2.textAlign='center';

@@ -6,25 +6,25 @@
     width: 300px;
   }
   body{
-    background-color: rgb(255,255,255);
+    background-color: rgb(127,127,127);
   }
   </style>
   <title> Main Wrapper</title>
-  <script src = "jspsych-6.0.1/jspsych.js"></script>
+  <script src = "jsPsych-6.0.1/jspsych.js"></script>
 
-  <script src = "jspsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-fixation.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-call-function.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-association.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-survey-text.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-instructions.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-RDK.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-reward.js"></script>
-  <script src = "jspsych-6.0.1/plugins/jspsych-decision.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-fullscreen.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-fixation.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-call-function.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-association.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-survey-text.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-instructions.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-RDK.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-reward.js"></script>
+  <script src = "jsPsych-6.0.1/plugins/jspsych-decision.js"></script>
 
-  <script src = "jspsych-6.0.1/pest.js"></script>
-  <link href = "jspsych-6.0.1/css/jspsych.css" rel = "stylesheet"></link>
+  <script src = "jsPsych-6.0.1/pest.js"></script>
+  <link href = "jsPsych-6.0.1/css/jspsych.css" rel = "stylesheet"></link>
   </head>
   <body>
     <div id="canvasesdiv" style="position:absolute;">
@@ -36,10 +36,13 @@
   </body>
   <script>
 
-    /*var canvas=document.getElementById("layer1");
+    var canvas=document.getElementById("layer1");
   	var layer2=document.getElementById("layer2");
     var ctx=layer1.getContext("2d");
-		var ctx2=layer2.getContext("2d");*/
+		var ctx2=layer2.getContext("2d");
+
+    var currBalance=0; //global var to track participant's winnings thruout
+
     var a_list=[];
     var b_list=[];
     var c_list=[];
@@ -178,13 +181,14 @@ var deg_per_px; //global for calculated px per degree
         response_ends_trial:false,
         coherent_direction:jsPsych.timelineVariable('coherent_direction'),
         coherence:1.0,
-        move_distance:3,
-        aperture_width:600,
-        aperture_height:600,
+        move_distance:7,
+        number_of_dots:400,
+        aperture_width:window.innerWidth,
+        aperture_height:window.innerHeight,
 
         aperture_type:4,
         fixation_cross:true,
-        border:true,
+        border:false,
         choices: [37,38,39,40],
         on_finish: function(){
           trialCounter=trialCounter+1;
@@ -198,38 +202,67 @@ var deg_per_px; //global for calculated px per degree
           console.log(imageset)
         }
       }
-      var reward_imageset={
+
+  /*    var reward_imageset={
         image1: 'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_a[trialCounter] +'.png',
         image2:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_b[trialCounter] +'.png',
         image3:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_c[trialCounter] +'.png',
         image4:'jsPsych-6.0.1/stimuli/vince_stimuli/' + assoc_list_d[trialCounter] +'.png',
 
-      }
+      }*/
 
-      var reward_trial = {
+  /*    var reward_trial = {
         type: 'reward',
         stimulus: 'img/happy_face_1.jpg',
         choices: [37,39],
-        prompt: '<p>Which image will you bet on? (Left or Right Arrow)</p>',
+      //   prompt: '<p>Which image will you bet on? (Left or Right Arrow)</p>',
         response_ends_trial: true,
-      }
-
-
+      }*/
+      var a_idx=0;
+      var b_idx=0;
+      var c_idx=0;
       var decision_trial = {
         type: 'decision',
         trial_duration:4500,
         number_of_apertures:2,
         response_ends_trial:false,
-        coherent_direction:[0,90],
+        number_of_dots:[200,200],
+        coherent_direction:jsPsych.timelineVariable('coherent_direction'),//[0,90],
         coherence:1.0,
-        move_distance:3,
+        move_distance:7,
         aperture_width:300,
         aperture_height:300,
-        aperture_center_x:[(window.innerWidth/4),(window.innerWidth*3/4)],
-        aperture_center_y:[window.innerHeight/2,window.innerHeight/2],
+        aperture_center_x:[window.innerWidth/2-250,window.innerWidth/2+250],
+        aperture_center_y:[window.innerHeight/2-100,window.innerHeight/2-100],
         aperture_type:4,
         fixation_cross:false,
         border:true,
+        response_ends_trial:false,
+        choices: [37,38,39,40],
+      //  on_finish:function(){decisionTrialCounter=decisionTrialCounter+1;}
+
+      }
+
+      var reward_trial = {
+        type: 'reward',
+        trial_duration:4500,
+        number_of_apertures:2,
+        response_ends_trial:false,
+        number_of_dots:[200,200],
+        coherent_direction:jsPsych.timelineVariable('coherent_direction'),//[0,90],
+        coherence:1.0,
+        move_distance:7,
+        aperture_width:300,
+        aperture_height:300,
+        aperture_center_x:[window.innerWidth/2-250,window.innerWidth/2+250],
+        aperture_center_y:[window.innerHeight/2-100,window.innerHeight/2-100],
+        aperture_type:4,
+        fixation_cross:false,
+        border:true,
+        response_ends_trial:false,
+        choices: [37,38,39,40],
+        on_finish:function(){rewardTrialCounter=rewardTrialCounter+1;}
+
       }
       function repeat_array(reps,array){
       var arr= []
@@ -238,7 +271,17 @@ var deg_per_px; //global for calculated px per degree
       }
       return arr
     }
-
+    function repeat_number(reps,number){
+    var arr=[];
+    for (var i=0; i < reps ;i++){
+  //    for (var a=0;a<array.length;a++){
+        arr.push(number);
+      //  arr.push(1);
+    // }
+    //  console.log(arr)
+    }
+    return arr
+  }
     function shuffle(a) {
         var j, x, i;
         var newArray
@@ -256,10 +299,73 @@ var deg_per_px; //global for calculated px per degree
 
 
 ///more modern perhaps
-          var main_instructions_block = {
+
+    var introduction_instructions={
+      type:'instructions',
+      pages:["Your browser must be in fullscreen mode for this experiment to display properly.  "+
+      "If your browser window is not in fullscreen mode, please press F11.  "+
+      "After entering fullscreen mode, please refresh the window (press F5).  "+
+      "Once you have freshly loaded this screen in fullscreen mode, press continue to begin.",
+      "This experiment has 3 phases.  During the first phase you will have the opportunity to win extra money.  "+
+      "During the second phase, you will try to avoid losing that extra money.  "+
+      "During the third phase, you will have the opportunity to try and win any lost extra money back (as well as hopefully earn some more).  "+
+      "At the end of the experiment, you may keep any winnings up to $1.00.  "+
+    "Instructions on how to claim your winnings will be given at the end of the experiment.",
+    "These winnings are only in addition to your base pay of which you are entitled ($2.00 for completion of the experiment).  If you finish with negative winnings this will not subtract from your guaranteed $2.00. "],
+    show_clickable_nav:true,
+    allow_keys:true,
+    button_label_next: 'Continue',
+
+    }
+    var end_if_win={
+      type:'instructions',
+      pages:function(){return["Congratulations!  You finished with $"+parseFloat(currBalance).toFixed(2)+" in bonus winnings.  "+
+            "Send an email to uclaqualialab@gmail.com with your worker ID to claim your extra money! Thank you for your participation."]},
+        show_clickable_nav:true,
+        allow_keys:true,
+        button_label_next: 'Continue',
+    }
+    var end_if_lose={
+      type:'instructions',
+      pages:["Sorry you did not finish with any extra winnings.  Thank you for your participation!"],
+      show_clickable_nav:true,
+      allow_keys:true,
+      button_label_next: 'Continue',
+    }
+    var win_if_node={
+      timeline:[end_if_win],
+      conditional_function:function(){
+        if (currBalance>0){
+          return true;
+        }else{
+          return false;
+        }
+      }
+    }
+    var lose_if_node={
+      timeline:[end_if_lose],
+      conditional_function:function(){
+        if (currBalance>0){
+          return false;
+        }else{
+          return true;
+        }
+      }
+    }
+
+
+
+          var association_instructions_block = {
             type: "instructions",
-            pages: ["In this portion of the experiment, you will view 4 categories of images presented on top of a series of moving dots."+
-            ""
+            pages: ["In this portion of the experiment, you will view 4 categories of images presented on top of a series of moving dots.  "+
+            "Each trial you have the ability to earn money by selecting the correct image.  "+
+            "For each direction of dot movement, selection of the correct picture will earn you money.  "+
+            "Selection of the wrong category will not earn you money (though none will be lost either).  "+
+            "Feedback will pop up on the screen indicating the result of your selection.  ",
+            "The images will displayed at the left, top, right, and bottom of the screen.  "+
+            "Make your selection with the appropriate arrow key on your keyboard.  ",
+            "Press the continue button or the right arrow key on your keyboard when you are ready to begin.  "+
+            "Have some fun and earn some money!"
           ],
           show_clickable_nav:true,
           allow_keys:true,
@@ -267,9 +373,40 @@ var deg_per_px; //global for calculated px per degree
 
 }
 
+var reward_instructions_block = {
+  type: "instructions",
+  pages: function(){return["Congratulations! Your current winnings are $"+parseFloat(currBalance).toFixed(2)+"!  Press continue or the right arrow key to continue to the next phase of the experiment.",
+  "In this next part of the experiment, you will be placing bets on two alternative displays of moving dots.  ",
+  "Every trial, there is one winning moving dot display and one losing dot display.  "+
+  "Selecting the losing display will result in a loss of money from your earnings in the previous portion of the experiment.  "+
+  "Selecting the winning display will means no money is taken from your current balance.  ",
+  "Your winnings can only go down in this portion of the experiment so do your best to hold onto them!  ",
+  "Also, a bet-stealing ghost has been set loose for this portion of the experiment.  "+
+  "<div style='float: center;'>'<img src='jsPsych-6.0.1/stimuli/ghost.png'></img>"+
+  "Sometimes he will pop up and make your bet for you.  Look out for him!",
 
+  "Press the continue botton or the right arrow key on your keyboard when you are ready to begin."
 
+]},
+show_clickable_nav:true,
+allow_keys:true,
+button_label_next: 'Continue',
 
+}
+
+var decision_instructions_block = {
+  type: "instructions",
+  pages: ["In this final part of the experiment, you will again be betting between images:  sometimes dot displays, sometimes natural images.  ",
+  "This time, no feedback will be displayed on the success or failure of your bet.  "+
+  "A tally will be kept of your winnings and you will be notified of how to claim them after the experiment.",
+  "Have some fun and earn some money!  Press the continue button or the right arrow key on your keyboard when you are ready to begin. "
+
+],
+show_clickable_nav:true,
+allow_keys:true,
+button_label_next: 'Continue',
+
+}
        function makeAllTrialTypes(trialArray){
          var newArray=[];
          for (var i=0; i<trialArray.length; i++){
@@ -323,34 +460,66 @@ var deg_per_px; //global for calculated px per degree
 
 
        timeline=[]
-       var association_test_procedure={
+       var reward_timeline_vars=[{coherent_direction: [0,90]},{coherent_direction: [0,180]},{coherent_direction:[0,270]},
+       /*{coherent_direction:[90,180]},{coherent_direction:[90,270]},*/{coherent_direction:[90,0]},
+       {coherent_direction:[180,0]},//{coherent_direction:[270,90]},
+       {coherent_direction:[270,0]}]//,{coherent_direction:[180,90]},{coherent_direction:[270,180]},{coherent_direction:[180,270]}]
+
+
+       var cat_names=['butterflies','horses','guitars']
+
+       var decision_timeline_vars=[{coherent_direction: [0,90]},{coherent_direction: [0,180]},
+       {coherent_direction:[90,180]},{coherent_direction:[90,0]},
+       {coherent_direction:[180,0]},
+      {coherent_direction:[180,90]},
+      {coherent_direction:['butterflies','horses']},{coherent_direction:['butterflies','guitars']},
+             {coherent_direction:['horses','guitars']},
+             {coherent_direction:['horses','butterflies']},{coherent_direction:['guitars','butterflies']},
+             {coherent_direction:['guitars','horses']}]
+
+       //only safe cond: {coherent_direction:[90,180]},,{coherent_direction:[180,90]},,{coherent_direction:[270,180]},{coherent_direction:[180,270]}
+
+       var trials2Win=repeat_number(96,0)
+       var lossTrials=repeat_number(24,1)
+       var trials2Lose=lossTrials.concat(trials2Win)
+       //console.log(trials2Lose)
+       trials2Lose=shuffle(trials2Lose);
+       console.log(trials2Lose);
+       var rewardTrialCounter=0;
+        var association_test_procedure={
          timeline:[main_trial],
          timeline_variables:[{coherent_direction: '0'},{coherent_direction:'180'}],
          randomize_order: true,
-         repetitions:10,
+         repetitions:60,//do 60
        }
 
        var reward_test_procedure={
          timeline:[reward_trial],
-         repetitions:5
+         timeline_variables: reward_timeline_vars,
+         randomize_order:true,
+         repetitions:20,//20*6=120 trials
        }
        var decision_test_procedure={
-         timeline:[decision_trial]
+         timeline:[decision_trial],
+         timeline_variables: decision_timeline_vars,
+         randomize_order:true,
+         repetitions:8//8*12=96 trials
        }
 
-       timeline.push({
+    /*   timeline.push({
          type: 'fullscreen',
          fullscreen_mode: true
-       })
+       })*/
     //  timeline.push(calib_loop_timeline,iso_instructions_block,fixation_block,iso_test_procedure,iso_debrief_block)
       //timeline.push(main_instructions_block,fixation_block,initialize_staircases,main_test_procedure,break_block,main_test_procedure)
-    //  timeline.push(association_test_procedure)
-    //  timeline.push(reward_test_procedure)
-      timeline.push(main_instructions_block,decision_test_procedure)
+  //    timeline.push(association_test_procedure)
+      //timeline.push(decision_test_procedure)
+//      timeline.push(reward_test_procedure)
+      timeline.push(introduction_instructions,association_instructions_block,association_test_procedure,reward_instructions_block,reward_test_procedure,decision_instructions_block,decision_test_procedure,win_if_node,lose_if_node)
       jsPsych.init({
         timeline:timeline,
         on_finish: function(){
-        //  jsPsych.data.get().localSave('csv','localizationPilot.csv'); //Save the data locally in a .csv file
+          jsPsych.data.get().localSave('csv','pilot4Cody.csv'); //Save the data locally in a .csv file
 
           jsPsych.data.displayData();}
       })

@@ -214,7 +214,14 @@ jsPsych.plugins["decision"] = (function() {
 		      pretty_name: "Border Color",
 		      default: 1,
 		      description: "The color of the border"
-		    }
+				},
+				gamble_timeout:{
+					type: jsPsych.plugins.parameterType.INT,
+					pretty_name: 'time until gambling ability expires',
+					default:2500,
+					description: 'total time to submit gamble',
+				},
+
 	    }
 	 }
 
@@ -271,6 +278,8 @@ jsPsych.plugins["decision"] = (function() {
 		var nDots = trial.number_of_dots; //Number of dots per set (equivalent to number of dots per frame)
 		var nSets = trial.number_of_sets; //Number of sets to cycle through per frame
 		var coherentDirection = trial.coherent_direction; //The direction of the coherentDots in degrees. Starts at 3 o'clock and goes counterclockwise (0 == rightwards, 90 == upwards, 180 == leftwards, 270 == downwards), range 0 - 360
+		var leftDirection = trial.coherent_direction[0];
+		var rightDirection = trial.coherent_direction[1];
 		var coherence = trial.coherence; //Proportion of dots to move together, range from 0 to 1
 		var oppositeCoherence = trial.opposite_coherence; // The coherence for the dots going the opposite direction as the coherent dots
 		var dotRadius = trial.dot_radius; //Radius of each dot in pixels
@@ -282,7 +291,7 @@ jsPsych.plugins["decision"] = (function() {
 		var backgroundColor = trial.background_color; //Color of the background
 		var apertureCenterX = trial.aperture_center_x; // The x-coordinate of center of the aperture on the screen, in pixels
 		var apertureCenterY = trial.aperture_center_y; // The y-coordinate of center of the aperture on the screen, in pixels
-
+		var gambleTimeout = trial.trial_duration;// trial.gamble_timeout;
 
 		/* RDK type parameter
 		** See Fig. 1 in Scase, Braddick, and Raymond (1996) for a visual depiction of these different signal selection rules and noise types
@@ -346,8 +355,9 @@ jsPsych.plugins["decision"] = (function() {
 		//Create a canvas element and append it to the DOM
 	//	var new_html='<p>Which image will you bet on?</p><p>(Left or Right Arrow Key)</p>'
 		//display_element.innerHTML = new_html;
-		var canvas = document.createElement("canvas");
+	//	var canvas = document.createElement("canvas");
 		display_element.appendChild(canvas);
+		display_element.appendChild(layer2);
 
 
 		//The document body IS 'display_element' (i.e. <body class="jspsych-display-element"> .... </body> )
@@ -363,10 +373,11 @@ jsPsych.plugins["decision"] = (function() {
 
 		//Get the context of the canvas so that it can be painted on.
 		var ctx = canvas.getContext("2d");
-
+//		var ctx2=layer2.getContext('2d');
 		//Declare variables for width and height, and also set the canvas width and height to the window width and height
-		var canvasWidth = canvas.width =window.innerWidth-100;// window.innerWidth-100
-		var canvasHeight = canvas.height = window.innerHeight-100;//window.innerHeight-100;
+		var canvasWidth = canvas.width =window.innerWidth;// window.innerWidth-100
+		var canvasHeight = canvas.height = window.innerHeight;//window.innerHeight-100;
+		ctx2.clearRect(0, 0, canvas.width, canvas.height);
 
 		//Set the canvas background color
 		canvas.style.backgroundColor = backgroundColor;
@@ -450,10 +461,17 @@ jsPsych.plugins["decision"] = (function() {
 		//variable to store how many frames were presented.
 		var numberOfFrames = 0;
 
+		var choiceMade;
+		var choiceDirection;
+		var lostBets=0;
 		//This runs the dot motion simulation, updating it according to the frame refresh rate of the screen.
-		animateDotMotion();
+		if (typeof coherentDirectionArray[0]=='number'){ animateDotMotion();}
+		if (typeof coherentDirectionArray[0]=='string'){showImages();timeoutID = window.setTimeout(end_trial,trial.trial_duration);timerHasStarted=true;}
+//}
 		//drawFix();
 		dispText();
+		startKeyboardListener();
+		var gambleTimer=window.setTimeout(gambleResult,gambleTimeout)
 		//--------RDK variables and function calls end--------
 
 
@@ -461,10 +479,70 @@ jsPsych.plugins["decision"] = (function() {
 		//-------------------------------------
 		//-----------FUNCTIONS BEGIN-----------
 		//-------------------------------------
+		function showImages(){
+			var imgSize=apertureWidth;
+			var imageOffset=0;
+			var img1=new Image();
+			var img2=new Image();
+			img1.onload=function(){
+				ctx.drawImage(img1,(apertureCenterXArray[0]-(imgSize/2))+imageOffset,(apertureCenterYArray[0]-(imgSize/2)),imgSize,imgSize)
+			}
+			img2.onload=function(){
+				ctx.drawImage(img2,(apertureCenterXArray[1]-(imgSize/2))+imageOffset,(apertureCenterYArray[1]-(imgSize/2)),imgSize,imgSize)
+			}
+			if (coherentDirectionArray[0]=='butterflies'){
+				img1.src='jsPsych-6.0.1/stimuli/vince_stimuli/'+reward_list_a[a_idx]+'.png';
+				a_idx=a_idx+1;
+			}else if (coherentDirectionArray[0]=='horses'){
+				img1.src='jsPsych-6.0.1/stimuli/vince_stimuli/'+reward_list_b[b_idx]+'.png';
+				b_idx=b_idx+1;
+			}else if (coherentDirectionArray[0]=='guitars'){
+				img1.src='jsPsych-6.0.1/stimuli/vince_stimuli/'+reward_list_c[c_idx]+'.png';
+				c_idx=c_idx+1;
+			}
+			if (coherentDirectionArray[1]=='butterflies'){
+				img2.src='jsPsych-6.0.1/stimuli/vince_stimuli/'+reward_list_a[a_idx]+'.png';
+				a_idx=a_idx+1;
+			}else if (coherentDirectionArray[1]=='horses'){
+				img2.src='jsPsych-6.0.1/stimuli/vince_stimuli/'+reward_list_b[b_idx]+'.png';
+				b_idx=b_idx+1;
+			}else if (coherentDirectionArray[1]=='guitars'){
+				img2.src='jsPsych-6.0.1/stimuli/vince_stimuli/'+reward_list_c[c_idx]+'.png';
+				c_idx=c_idx+1;
+			}
+			console.log(img1.src,img2.src)
 
+		}
+
+		function gambleResult(){
+
+
+			if (choiceMade==null){
+				jsPsych.pluginAPI.cancelKeyboardResponse(keyboardListener)
+			}
+			if (choiceMade==0){
+				var fillColor='#ff0000';
+
+				var txt2disp='Bet lost! -$$';
+			//	ctx.fillStyle='red';
+				lostBets=lostBets+1;
+			}else if (choiceMade !== 0 && response.key !== -1){
+				var fillColor='yellow';
+
+				var txt2disp='Good bet! Kept $$';
+			//	ctx.fillStyle='green';
+			}else{
+				var fillColor='#ff0000';
+
+				var txt2disp='No bet placed! -$';
+				//ctx.fillStyle='red';
+			}
+			ctx.font = "24px Calibri";
+			ctx.textAlign='center';
+			ctx.fillStyle=fillColor;
+		}
 		//----JsPsych Functions Begin----
 		function dispText(){
-			var txt2disp='Incorrect! No $$';
 			ctx.fillStyle='black';
 
 			var txt2disp1='Which image will you bet on?'
@@ -472,13 +550,39 @@ jsPsych.plugins["decision"] = (function() {
 
 			ctx.font = "18px Calibri";
 			ctx.textAlign='center';
-			ctx.fillText(txt2disp1,(canvasWidth/2),(canvasHeight/2))
-			ctx.fillText(txt2disp2,(canvasWidth/2),(canvasHeight/2)+30)
+			ctx.fillText(txt2disp1,(canvasWidth/2),(canvasHeight/2)+(apertureHeight/2)+30)
+			ctx.fillText(txt2disp2,(canvasWidth/2),(canvasHeight/2)+(apertureHeight/2)+60)
 
-			console.log('text displayed')
 
 		}
 
+		function drawLeftBox(){
+		//	ctx.beginpath();
+			ctx.lineWidth=4;
+			ctx.strokeStyle='blue';
+			ctx.strokeRect(apertureCenterXArray[0]-horizontalAxis-(borderThickness/2)-25, apertureCenterYArray[0]-verticalAxis-(borderThickness/2)-25, (horizontalAxis*2)+borderThickness+50, (verticalAxis*2)+borderThickness+50);
+		}
+
+		function drawRightBox(){
+		//	ctx.beginpath();
+			ctx.lineWidth=4;
+			ctx.strokeStyle='blue';
+			ctx.strokeRect(apertureCenterXArray[1]-horizontalAxis-(borderThickness/2)-25, apertureCenterYArray[1]-verticalAxis-(borderThickness/2)-25, (horizontalAxis*2)+borderThickness+50, (verticalAxis*2)+borderThickness+50);
+		}
+
+		function clearLeftBox(){
+		//	ctx.beginpath();
+			ctx.lineWidth=8;
+			ctx.strokeStyle=backgroundColor;
+			ctx.strokeRect(apertureCenterXArray[0]-horizontalAxis-(borderThickness/2)-25, apertureCenterYArray[0]-verticalAxis-(borderThickness/2)-25, (horizontalAxis*2)+borderThickness+50, (verticalAxis*2)+borderThickness+50);
+		}
+
+		function clearRightBox(){
+		//	ctx.beginpath();
+			ctx.lineWidth=8;
+			ctx.strokeStyle=backgroundColor;
+			ctx.strokeRect(apertureCenterXArray[1]-horizontalAxis-(borderThickness/2)-25, apertureCenterYArray[1]-verticalAxis-(borderThickness/2)-25, (horizontalAxis*2)+borderThickness+50, (verticalAxis*2)+borderThickness+50);
+		}
 		function drawFix() {
 			//horizontal
 			ctx.beginPath();
@@ -591,7 +695,11 @@ jsPsych.plugins["decision"] = (function() {
 				"border_thickness": trial.border_thickness,
 				"border_color": trial.border_color,
 				"canvas_width": canvasWidth,
-				"canvas_height": canvasHeight
+				"canvas_height": canvasHeight,
+				"left_direction":leftDirection,
+				"right_direction":rightDirection,
+				"choice_made":choiceMade,
+				"choice_direction":choiceDirection,
 
 			}
 
@@ -610,13 +718,31 @@ jsPsych.plugins["decision"] = (function() {
 		function after_response(info) {
 
 			//Kill the timeout if the subject has responded within the time given
-			window.clearTimeout(timeoutID);
+		//	window.clearTimeout(timeoutID);
 
 			//If the response has not been recorded, record it
 			if (response.key == -1) {
 				response = info; //Replace the response object created above
 			}
 
+			if(response.key==37){
+				drawLeftBox();
+				choiceDirection='left';
+				choiceMade=coherentDirectionArray[0];
+				if (choiceMade=='guitars'||choiceMade==0){
+					currBalance=currBalance-.05;
+				}else{
+					currBalance=currBalance+.05;
+				}
+				//gambleResult();
+				//window.clearTimeout(gambleTimer)
+			}else if(response.key==39){
+				drawRightBox();
+				choiceDirection='right';
+				choiceMade=coherentDirectionArray[1];
+			//	gambleResult;
+				//window.clearTimeout(gambleTimer)
+			}
 			//If the parameter is set such that the response ends the trial, then end the trial
 			if (trial.response_ends_trial) {
 				end_trial();
@@ -992,7 +1118,6 @@ jsPsych.plugins["decision"] = (function() {
 	        	if(apertureType === 3 || apertureType === 4){
 	          		ctx.lineWidth = borderThickness;
 	          		ctx.strokeStyle = borderColor;
-								console.log(ctx.strokeStyle)
 	          		ctx.strokeRect(apertureCenterX-horizontalAxis-(borderThickness/2), apertureCenterY-verticalAxis-(borderThickness/2), (horizontalAxis*2)+borderThickness, (verticalAxis*2)+borderThickness);
 	        	}//End of if square or
 
@@ -1296,7 +1421,7 @@ jsPsych.plugins["decision"] = (function() {
 			var frameRequestID = window.requestAnimationFrame(animate);
 
 			//Start to listen to subject's key responses
-			startKeyboardListener();
+			//startKeyboardListener();
 
 			//Delare a timestamp
 			var previousTimestamp;
